@@ -35,14 +35,22 @@ def compute_scores(y_true, y_pred):
 
 def compress_to_uint8(arr: np.ndarray):
     """
-    Compress float array to uint8 by linear scaling.
-    Returns quantized uint8 array, min, max for dequantization.
+    Compress float array or scalar to uint8 by linear scaling.
+    Returns quantized uint8 array or scalar, min, max for dequantization.
     """
-    arr_min = arr.min()
-    arr_max = arr.max()
+    arr_min = arr.min() if hasattr(arr, 'min') else arr
+    arr_max = arr.max() if hasattr(arr, 'max') else arr
+    if arr_max == arr_min:
+        # Range zero, all values are same
+        # Return zero array or scalar zero quant
+        if arr.size == 1:
+            return np.uint8(0), arr_min, arr_max
+        else:
+            return np.zeros_like(arr, dtype=np.uint8), arr_min, arr_max
     scale = 255 / (arr_max - arr_min)
     arr_q = ((arr - arr_min) * scale).astype(np.uint8)
     return arr_q, arr_min, arr_max
+
 
 def decompress_from_uint8(arr_q: np.ndarray, arr_min: float, arr_max: float):
     """
