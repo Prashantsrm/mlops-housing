@@ -1,0 +1,36 @@
+name: CI/CD
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt
+      - run: pytest
+
+  train-and-quantize:
+    runs-on: ubuntu-latest
+    needs: test-suite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt
+      - run: python src/train.py
+      - run: python src/quantize.py
+
+  build-and-test-container:
+    runs-on: ubuntu-latest
+    needs: train-and-quantize
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mlops-housing .
+      - run: docker run --rm mlops-housing
+
